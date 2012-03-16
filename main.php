@@ -1,7 +1,14 @@
 <?php
 
+$ELASTIC_HOST = 'es-dev.lib.ohio-state.edu';
+$ELASTIC_PORT = 9200;
+$ELASTIC_INDEX = 'kb';
+$ELASTIC_TYPE = 'stats';
+
+$RELATIVE_PATH_TO_LOGS = '/../logs/';
+
 define('ELASTICA_LIBRARY_PATH', dirname(__FILE__) . '/library/Elastica/lib/');
-define('CSV_LOG_PATH', dirname(__FILE__) . '/../logs/');
+define('CSV_LOG_PATH', dirname(__FILE__) . $RELATIVE_PATH_TO_LOGS);
 
 
 function __autoload_elastica($class)
@@ -20,15 +27,15 @@ require_once(dirname(__FILE__) . '/library/ParseCsv.php');
 
 
 $elasticaClient = new Elastica_Client(array(
-    'host'=>'es-dev.lib.ohio-state.edu',
-    'port'=>9200
+    'host'=>$ELASTIC_HOST,
+    'port'=>$ELASTIC_PORT
 ));
 
 
-$index = $elasticaClient->getIndex('kb');
+$index = $elasticaClient->getIndex($ELASTIC_INDEX);
 
 
-$stats = $index->getType('stats');
+$stats = $index->getType($ELASTIC_TYPE);
 
 
 $mapping = new Elastica_Type_Mapping($stats);
