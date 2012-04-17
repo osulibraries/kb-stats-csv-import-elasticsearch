@@ -66,7 +66,7 @@ $propertiesJSON = <<<JSON
       "index":"not_analyzed"
    },
    "type":{
-      "type":"integer",
+      "type":"string",
       "index":"not_analyzed",
       "omit_norms":true
    },
@@ -100,7 +100,6 @@ $propertiesJSON = <<<JSON
       "index":"not_analyzed"
    },
    "time":{
-      "format":"date_time_no_millis",
       "type":"date"
    },
    "owningItem":{
@@ -126,10 +125,10 @@ $propertiesJSON = <<<JSON
 JSON;
 
 $mapping->setProperties( json_decode($propertiesJSON,true) );
-
+echo "Setting Elastic Schema Properties...\n";
 $mapping->send();
 
-
+echo "ImportUsage: php main.php /path/to/csvlogs\n";
 $parser = new ParseCsv(CSV_LOG_PATH);
 
 
@@ -138,14 +137,19 @@ $multiples = array(
     'owningComm'
 );
 
+$i=0;
+
 foreach ($parser as $docs) {
 
-    echo "Starting new csv doc\n";
+    echo "Starting new csv doc (doc count = $i )\n";
 
+    $batchDocs = array();
+    $startTime=microtime(true);
+    $startDocs = $i;
 
 
     foreach ($docs as $doc) {
-
+        $i++;
 
         foreach($multiples as $col){
             if(strpos($doc[$col],',') > -1){
@@ -157,34 +161,54 @@ foreach ($parser as $docs) {
 
             }
             else{
-                $doc[$col] = intval($doc['col']);
+                $doc[$col] = intval($doc[$col]);
             }
         }
 
         $time = strtotime($doc['time']);
 
-        $doc['time']= gmdate("Y-m-d\TH:i:s\Z",$time);
+        $doc['time'] = date(DATE_ISO8601, $time);
 
-        $doc['geo'] = array(
-            'lat'=>$doc['latitude'],
-            'lon'=>$doc['longitude']
-        );
+         //gmdate("Y-m-d\TH:i:s\Z",$time);
+
+        if($doc['latitude'] != '' && $doc['longitude'] != '') {
+            $doc['geo'] = array(
+                'lat'=>$doc['latitude'],
+                'lon'=>$doc['longitude']
+            );
+        }
+
         unset($doc['latitude'],$doc['longitude']);
 
         $doc['reverseDns'] = trim(implode('.',array_reverse(explode('.',$doc['dns']))),'.');
 
+        if($doc['type']==0) {
+            $doc['type']="bitstream";
+        } else if($doc['type']==2) {
+            $doc['type']="item";
+        } else if($doc['type']==3) {
+            $doc['type']="collection";
+        } else if($doc['type']==4) {
+            $doc['type']="community";
+        } else {
+            $doc['type']="unknown";
+        }
 
         $doc = new Elastica_Document(null, $doc);
+        $batchDocs[] = $doc;
 
 
-        $stats->addDocument($doc);
+        //$stats->addDocument($doc);
 
 
     }
 
 
+    $stats->addDocuments($batchDocs);
+    $endTime=microtime(true);
+    $endDocs = $i;
 
-    //$stats->addDocuments($docs);
+    echo 'Added '.($endDocs-$startDocs).' docs in '.($endTime-$startTime).' time, thus '.(($endDocs-$startDocs)/($endTime-$startTime)).' is some perf score.';
 
 
 }
