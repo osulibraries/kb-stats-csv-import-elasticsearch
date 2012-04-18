@@ -164,7 +164,8 @@ foreach ($parser as $docs) {
                 $doc[$col] = intval($doc[$col]);
             }
         }
-
+	
+	date_default_timezone_set('UTC');
         $time = strtotime($doc['time']);
 
         $doc['time'] = date(DATE_ISO8601, $time);
