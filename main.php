@@ -183,13 +183,13 @@ foreach ($parser as $docs) {
         $doc['reverseDns'] = trim(implode('.',array_reverse(explode('.',$doc['dns']))),'.');
 
         if($doc['type']==0) {
-            $doc['type']="bitstream";
+            $doc['type']="BITSTREAM";
         } else if($doc['type']==2) {
-            $doc['type']="item";
+            $doc['type']="ITEM";
         } else if($doc['type']==3) {
-            $doc['type']="collection";
+            $doc['type']="COLLECTION";
         } else if($doc['type']==4) {
-            $doc['type']="community";
+            $doc['type']="COMMUNITY";
         } else {
             $doc['type']="unknown";
         }
