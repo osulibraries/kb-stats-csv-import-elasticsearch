@@ -203,8 +203,10 @@ foreach ($parser as $docs) {
 
     }
 
+    if(count($batchDocs) > 0) {
+        $stats->addDocuments($batchDocs);
+    }
 
-    $stats->addDocuments($batchDocs);
     $endTime=microtime(true);
     $endDocs = $i;
 
