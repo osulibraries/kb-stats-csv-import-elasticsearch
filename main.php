@@ -128,6 +128,9 @@ $mapping->setProperties( json_decode($propertiesJSON,true) );
 echo "Setting Elastic Schema Properties...\n";
 $mapping->send();
 
+unset($mapping);
+unset($propertiesJSON);
+
 echo "ImportUsage: php main.php /path/to/csvlogs\n";
 $parser = new ParseCsv(CSV_LOG_PATH);
 
@@ -138,6 +141,7 @@ $multiples = array(
 );
 
 $i=0;
+$numSkipped=0;
 
 foreach ($parser as $docs) {
 
@@ -147,6 +151,8 @@ foreach ($parser as $docs) {
     $startTime=microtime(true);
     $startDocs = $i;
 
+
+    date_default_timezone_set('UTC');
 
     foreach ($docs as $doc) {
         $i++;
@@ -165,14 +171,21 @@ foreach ($parser as $docs) {
             }
         }
 	
-	date_default_timezone_set('UTC');
-        $time = strtotime($doc['time']);
 
-        $doc['time'] = date(DATE_ISO8601, $time);
+        if(isset($doc['time']) ) {
+            $time = strtotime($doc['time']);
+            $doc['time'] = date(DATE_ISO8601, $time);
+        } else {
+            $numSkipped++;
+            continue;
+        }
+
+
+
 
          //gmdate("Y-m-d\TH:i:s\Z",$time);
 
-        if($doc['latitude'] != '' && $doc['longitude'] != '') {
+        if(isset($doc['latitude']) && $doc['latitude'] != '' && isset($doc['longitude']) && $doc['longitude'] != '') {
             $doc['geo'] = array(
                 'lat'=>$doc['latitude'],
                 'lon'=>$doc['longitude']
@@ -200,7 +213,11 @@ foreach ($parser as $docs) {
 
 
         //$stats->addDocument($doc);
-
+        if(count($batchDocs) > 10000) {
+            $stats->addDocuments($batchDocs);
+            $batchDocs = array();
+            echo "\nHad to pre-emptively add batchDocs";
+        }
 
     }
 
@@ -216,6 +233,7 @@ foreach ($parser as $docs) {
 
 }
 
+echo '\nSkipped '.$numSkipped.' documents.';
 
 
 
